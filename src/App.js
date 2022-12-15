@@ -13,26 +13,31 @@ function App() {
 
   const [status, setStatus] = useState('idle');
   const [fileStatus, setFileStatus] = useState('');
+  const [comparisonData, setComparisonData] = useState([]);
 
-   const sendFile = async (formData) => {
-      console.log(formData);
-      setStatus('fetching');
+  const sendFile = async (formData) => {
 
-      const reqBody = new FormData();
-      reqBody.append("music", formData.music[0], formData.music[0].name);
+    setStatus('working...');
 
-      const requestOptions = {
-        method: 'POST',
-        body: reqBody,
-        redirect: 'follow'
-      };
+    const uploadUrl = "http://localhost:3001/upload-music";
+    const compareUrl = "http://localhost:3001/compare-files?file=";
 
-      fetch("http://localhost:3001/upload-music", requestOptions)
-        .then(response => response.text())
-        .then(result => {
-          console.log(result);
-          setStatus('fetched')}
-        ).catch(error => console.log('error', error));
+    const reqBody = new FormData();
+    reqBody.append("music", formData.music[0], formData.music[0].name);
+    const requestOptions = {
+      method: 'POST',
+      redirect: 'follow',
+      body: reqBody
+    };
+
+    const response = await fetch(uploadUrl, requestOptions).then(response => response.json());
+    setStatus('uploaded file');
+    console.log(response);
+    const result = await fetch(compareUrl + response.data.name).then(response => response.json());
+    setComparisonData(result.data.files);
+    setStatus('comparison complete');
+    console.log(result);
+
   };
 
   const onInputChange = (ev) => {
@@ -41,24 +46,30 @@ function App() {
     }
   }
 
+
   return (
     <div className="App">
       {<p className="alert">{status}</p>}
       <div className="logo">
-      <img src={LogoSVG} alt="Guitar Hero!" />
+        <img src={LogoSVG} alt="Guitar Hero!" />
       </div>
-      <form onSubmit={handleSubmit((data) => sendFile(data))}>
-        <label className="file-input">Upload your version of "Smells like Teen Spirit" by Nirvana.
-          <div className="select-file">UPLOAD YOUR RIFF!</div>
-          <input type="file" name="music" {...register('music')} onChange={(e) => onInputChange(e)} />
-        </label>
-        <input
-          type="submit"
-          disabled={fileStatus === 'fileReady' ? false : true}
-          className={fileStatus === 'fileReady' ? "ready" : "disabled"}
-          value={fileStatus === 'fileReady' ? "ENTERTAIN US!" : "UPLOAD YOUR RIFFAGE!"}
-        />
-      </form>
+      {status !== 'comparison complete' ?
+        <form onSubmit={handleSubmit((data) => sendFile(data))}>
+          <label className="file-input">Upload your version of "Smells like Teen Spirit" by Nirvana.
+            <div className="select-file">UPLOAD YOUR RIFF!</div>
+            <input type="file" name="music" {...register('music')} onChange={(e) => onInputChange(e)} />
+          </label>
+          <input
+            type="submit"
+            disabled={fileStatus === 'fileReady' ? false : true}
+            className={fileStatus === 'fileReady' ? "ready" : "disabled"}
+            value={fileStatus === 'fileReady' ? "ENTERTAIN US!" : "UPLOAD YOUR RIFFAGE!"}
+          />
+        </form>
+      : <div>
+        <h2>Scores:</h2>
+          {comparisonData.map((d, i) => (<div className="resultBlock" key={i+1}><h3>Track title</h3><p>{d.match}</p></div>))}
+        </div>}
     </div>
   );
 }
