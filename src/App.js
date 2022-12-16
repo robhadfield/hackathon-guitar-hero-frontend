@@ -21,6 +21,7 @@ function App() {
 
     const uploadUrl = "http://localhost:3001/upload-music";
     const compareUrl = "http://localhost:3001/compare-files?file=";
+    const voteUrl = "http://localhost:3001/vote?songid=";
 
     const reqBody = new FormData();
     reqBody.append("music", formData.music[0], formData.music[0].name);
@@ -30,13 +31,21 @@ function App() {
       body: reqBody
     };
 
+    // Save file
     const response = await fetch(uploadUrl, requestOptions).then(response => response.json());
     setStatus('uploaded file');
     console.log(response);
+
+    // Compare files
     const result = await fetch(compareUrl + response.data.name).then(response => response.json());
-    setComparisonData(result.data.files);
+    const max = result.data.files.reduce((prev, current) => (prev.match > current.match) ? prev : current)
+    setComparisonData(max);
     setStatus('comparison complete');
-    console.log(result);
+
+    // Vote
+    console.log(max);
+    const vote = await fetch(voteUrl + max.uuid).then(response => response.json());
+    console.log(vote);
 
   };
 
@@ -55,7 +64,14 @@ function App() {
       </div>
       {status !== 'comparison complete' ?
         <form onSubmit={handleSubmit((data) => sendFile(data))}>
-          <label className="file-input">Upload your version of "Smells like Teen Spirit" by Nirvana.
+          <label className="file-input"><h3><span>"With the lights out, it's less dangerous..."</span> is a lyric from which of these popular rock songs?</h3>
+          <ol>
+            <li>Smoke On The Water</li>
+            <li>Smells Like Teen Spirit</li>
+            <li>Killer Queen</li>
+            <li>You Really Got Me</li>
+          </ol>
+          <p><strong>Record and upload a riff to vote!</strong></p>
             <div className="select-file">UPLOAD YOUR RIFF!</div>
             <input type="file" name="music" {...register('music')} onChange={(e) => onInputChange(e)} />
           </label>
@@ -67,8 +83,9 @@ function App() {
           />
         </form>
       : <div>
-        <h2>Scores:</h2>
-          {comparisonData.map((d, i) => (<div className="resultBlock" key={i+1}><h3>Track title</h3><p>{d.match}</p></div>))}
+        <h2>We have a match!</h2>
+        <h3>You voted for: <span>{comparisonData.title}</span></h3>
+        <p>Your riff matched with our master riff - <strong>{comparisonData.match}%!</strong></p>
         </div>}
     </div>
   );

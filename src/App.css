@@ -59,7 +59,6 @@ input {
 
 label {
   display: block;
-  text-align: center;
 }
 
 .select-file {
@@ -103,4 +102,8 @@ input[type="submit"]:hover {
 
 input[type="submit"].disabled {
   background: #333;
+}
+
+h3 span {
+  color: rgb(var(--yellow));
 }
